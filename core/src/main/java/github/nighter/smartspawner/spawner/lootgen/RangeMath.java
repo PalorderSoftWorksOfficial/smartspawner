@@ -21,32 +21,41 @@ class RangeMath {
         boolean playerFound;
 
         for (int i = 0; i < spawners.size(); i++) {
-            SpawnerData s = spawners.get(i);
-            final Location spawnerLoc = s.getSpawnerLocation();
-            if (spawnerLoc == null) continue;
-
-            final World locWorld = spawnerLoc.getWorld();
-            if (locWorld == null) continue;
-
-            final UUID worldUID = locWorld.getUID();
-            final double rangeSq = s.getSpawnerRange() * s.getSpawnerRange();
-
-            playerFound = false;
-
-            for (PlayerRangeWrapper p : rangePlayers) {
-                if (!p.spawnConditions()) continue;
-                if (!worldUID.equals(p.worldUID())) continue;
-
-                if (p.distanceSquared(spawnerLoc) <= rangeSq) {
-                    playerFound = true;
-                    break;
+            try {
+                SpawnerData s = spawners.get(i);
+                final Location spawnerLoc = s.getSpawnerLocation();
+                if (spawnerLoc == null) {
+                    activeSpawners[i] = false;
+                    continue;
                 }
-            }
 
-            activeSpawners[i] = playerFound;
+                final World locWorld = spawnerLoc.getWorld();
+                if (locWorld == null) {
+                    activeSpawners[i] = false;
+                    continue;
+                }
+
+                final UUID worldUID = locWorld.getUID();
+                final double rangeSq = s.getSpawnerRange() * s.getSpawnerRange();
+
+                playerFound = false;
+
+                for (PlayerRangeWrapper p : rangePlayers) {
+                    if (!p.spawnConditions()) continue;
+                    if (!worldUID.equals(p.worldUID())) continue;
+
+                    if (p.distanceSquared(spawnerLoc) <= rangeSq) {
+                        playerFound = true;
+                        break;
+                    }
+                }
+
+                activeSpawners[i] = playerFound;
+            } catch (Exception e) {
+                activeSpawners[i] = false;
+            }
         }
 
         return activeSpawners;
     }
-
 }
