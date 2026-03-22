@@ -2,7 +2,7 @@ package github.nighter.smartspawner.spawner.interactions.place;
 
 import github.nighter.smartspawner.SmartSpawner;
 import github.nighter.smartspawner.api.events.SpawnerPlaceEvent;
-import github.nighter.smartspawner.extras.HopperHandler;
+import github.nighter.smartspawner.extras.HopperService;
 import github.nighter.smartspawner.hooks.protections.CheckStackBlock;
 import github.nighter.smartspawner.language.MessageService;
 import github.nighter.smartspawner.spawner.properties.SpawnerData;
@@ -10,6 +10,7 @@ import github.nighter.smartspawner.spawner.data.SpawnerManager;
 import github.nighter.smartspawner.Scheduler;
 import github.nighter.smartspawner.spawner.utils.SpawnerTypeChecker;
 
+import github.nighter.smartspawner.utils.BlockPos;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -37,7 +38,7 @@ public class SpawnerPlaceListener implements Listener {
     private final SmartSpawner plugin;
     private final MessageService messageService;
     private final SpawnerManager spawnerManager;
-    private final HopperHandler hopperHandler;
+    private final HopperService hopperService;
 
     private final Map<UUID, Long> lastPlacementTime = new ConcurrentHashMap<>();
 
@@ -45,7 +46,7 @@ public class SpawnerPlaceListener implements Listener {
         this.plugin = plugin;
         this.messageService = plugin.getMessageService();
         this.spawnerManager = plugin.getSpawnerManager();
-        this.hopperHandler = plugin.getHopperHandler();
+        this.hopperService = plugin.getHopperService();
     }
 
     @EventHandler
@@ -277,6 +278,25 @@ public class SpawnerPlaceListener implements Listener {
     }
 
     private void createSmartSpawner(Block block, Player player, EntityType entityType, int stackSize) {
+        // Check if a spawner already exists at this location (prevent duplicates/ghost spawners)
+        SpawnerData existingSpawner = spawnerManager.getSpawnerByLocation(block.getLocation());
+        if (existingSpawner != null) {
+            plugin.debug("Spawner already exists at " + block.getLocation() + " with ID " + existingSpawner.getSpawnerId());
+            // Update the existing spawner instead of creating a duplicate
+            existingSpawner.updateLastInteractedPlayer(player.getName());
+            if (existingSpawner.getEntityType() == entityType) {
+                // Same type - add to stack
+                int newStackSize = existingSpawner.getStackSize() + stackSize;
+                existingSpawner.setStackSize(Math.min(newStackSize, existingSpawner.getMaxStackSize()));
+                spawnerManager.queueSpawnerForSaving(existingSpawner.getSpawnerId());
+                messageService.sendMessage(player, "spawner_stacked");
+            } else {
+                // Different type - just activate it
+                messageService.sendMessage(player, "spawner_activated");
+            }
+            return;
+        }
+
         String spawnerId = UUID.randomUUID().toString().substring(0, 8);
 
         BlockState state = block.getState(false);
@@ -288,7 +308,7 @@ public class SpawnerPlaceListener implements Listener {
         SpawnerData spawner = new SpawnerData(spawnerId, block.getLocation(), entityType, plugin);
         spawner.setSpawnerActive(true);
         spawner.setStackSize(stackSize);
-        
+
         // Track player interaction for last interaction field
         spawner.updateLastInteractedPlayer(player.getName());
         spawnerManager.addSpawner(spawnerId, spawner);
@@ -302,6 +322,25 @@ public class SpawnerPlaceListener implements Listener {
     }
 
     private void createSmartItemSpawner(Block block, Player player, Material itemMaterial, int stackSize) {
+        // Check if a spawner already exists at this location (prevent duplicates/ghost spawners)
+        SpawnerData existingSpawner = spawnerManager.getSpawnerByLocation(block.getLocation());
+        if (existingSpawner != null) {
+            plugin.debug("Item spawner already exists at " + block.getLocation() + " with ID " + existingSpawner.getSpawnerId());
+            // Update the existing spawner instead of creating a duplicate
+            existingSpawner.updateLastInteractedPlayer(player.getName());
+            if (existingSpawner.isItemSpawner() && existingSpawner.getSpawnedItemMaterial() == itemMaterial) {
+                // Same item type - add to stack
+                int newStackSize = existingSpawner.getStackSize() + stackSize;
+                existingSpawner.setStackSize(Math.min(newStackSize, existingSpawner.getMaxStackSize()));
+                spawnerManager.queueSpawnerForSaving(existingSpawner.getSpawnerId());
+                messageService.sendMessage(player, "spawner_stacked");
+            } else {
+                // Different type - just activate it
+                messageService.sendMessage(player, "spawner_activated");
+            }
+            return;
+        }
+
         String spawnerId = UUID.randomUUID().toString().substring(0, 8);
 
         BlockState state = block.getState(false);
@@ -316,7 +355,7 @@ public class SpawnerPlaceListener implements Listener {
         SpawnerData spawner = new SpawnerData(spawnerId, block.getLocation(), itemMaterial, plugin);
         spawner.setSpawnerActive(true);
         spawner.setStackSize(stackSize);
-        
+
         // Track player interaction for last interaction field
         spawner.updateLastInteractedPlayer(player.getName());
 
@@ -343,12 +382,10 @@ public class SpawnerPlaceListener implements Listener {
     }
 
     private void setupHopperIntegration(Block block) {
-        Scheduler.runLocationTask(block.getLocation(), () -> {
-            Block blockBelow = block.getRelative(BlockFace.DOWN);
-            if (blockBelow.getType() == Material.HOPPER && hopperHandler != null) {
-                hopperHandler.startHopperTask(blockBelow.getLocation(), block.getLocation());
-            }
-        });
+        Block blockBelow = block.getRelative(BlockFace.DOWN);
+        if (plugin.getHopperConfig().isHopperEnabled() && blockBelow.getType() == Material.HOPPER) {
+            hopperService.getTracker().tryAdd(blockBelow);
+        }
     }
 
     public void cleanupPlayer(UUID playerId) {

@@ -63,7 +63,6 @@ spawner_storage_item:
 # Entity Information:
 # {entity}           - Formatted entity name (e.g., "Zombie")
 # {ᴇɴᴛɪᴛʏ}           - Entity name in small caps (e.g., "ᴢᴏᴍʙɪᴇ")
-# {entity_type}      - Raw entity type (e.g., "ZOMBIE")
 #
 # Stack Information:
 # {stack_size}       - Number of spawners stacked at this location
@@ -162,9 +161,76 @@ button_add:
     - ''
     - '&#2cc483⊳ &#f8f8ffɴʜấᴘ để ᴛʜêᴍ ᴠàᴏ ꜱᴛᴀᴄᴋ'
 
+button_remove_all:
+  name: '&#ff5252ɢỡ ᴛấᴛ ᴄả'
+  lore:
+    - ''
+    - '&#e63939◈ &#ff7070ʜàɴʜ độɴɢ:'
+    - '  &#f8f8ff•  ɢỡ ᴛấᴛ ᴄả ꜱᴘᴀᴡɴᴇʀ'
+    - '  &#f8f8ff•  ꜱᴛᴀᴄᴋ ʜɪệɴ ᴛạɪ: &#ff5252{stack_size}'
+    - ''
+    - '&#e63939⊳ &#f8f8ffɴʜấᴘ để ɢỡ ᴛấᴛ ᴄả ᴋʜỏɪ ꜱᴛᴀᴄᴋ'
+
+button_add_all:
+  name: '&#37eb9aᴛʜêᴍ ᴛấᴛ ᴄả'
+  lore:
+    - ''
+    - '&#2cc483◈ &#48e89bʜàɴʜ độɴɢ:'
+    - '  &#f8f8ff•  ᴛʜêᴍ ᴛấᴛ ᴄả ꜱᴘᴀᴡɴᴇʀ ᴛừ ᴛúɪ đồ'
+    - '  &#f8f8ff•  ꜱᴛᴀᴄᴋ ʜɪệɴ ᴛạɪ: &#37eb9a{stack_size}'
+    - ''
+    - '&#2cc483⊳ &#f8f8ffɴʜấᴘ để ᴛʜêᴍ ᴛấᴛ ᴄả ᴠàᴏ ꜱᴛᴀᴄᴋ'
+
+# ---------------------------------------------------
+#            GUI Xác Nhận Bán
+# ---------------------------------------------------
+gui_title_sell_confirm: '&#545454xáᴄ ɴʜậɴ ʙáɴ'
+
+button_sell_cancel:
+  name: '&#e74c3c✖ ʜủʏ ʙỏ'
+  lore:
+    - ''
+    - '&#e74c3c⊳ &#ecf0f1ɴʜấᴘ để ʜủʏ'
+
+button_sell_confirm:
+  name: '&#2ecc71✔ xáᴄ ɴʜậɴ ʙáɴ'
+  lore:
+    - ''
+    - '&#2ecc71◈ &#48e89bɴʜậɴ:'
+    - '  &#f8f8ff•  ᴛɪềɴ: &#2ecc71{total_sell_price}đ'
+    - ''
+    - '&#2ecc71⊳ &#f8f8ffɴʜấᴘ để xáᴄ ɴʜậɴ'
+
+button_sell_confirm_with_exp:
+  name: '&#2ecc71✔ xáᴄ ɴʜậɴ ʙáɴ & ɴʜậɴ xᴘ'
+  lore:
+    - ''
+    - '&#2ecc71◈ &#48e89bɴʜậɴ:'
+    - '  &#f8f8ff•  ᴛɪềɴ: &#2ecc71{total_sell_price}đ'
+    - '  &#f8f8ff•  xᴘ: &#2ecc71{current_exp}'
+    - ''
+    - '&#2ecc71⊳ &#f8f8ffɴʜấᴘ để xáᴄ ɴʜậɴ'
+
+button_sell_info:
+  name: '&#3498dbꜱᴘᴀᴡɴᴇʀ {ᴇɴᴛɪᴛʏ}'
+  lore:
+    - ''
+    - '&#3498db◈ &#ecf0f1ᴛʜôɴɢ ᴛɪɴ ᴋʜᴏ:'
+    - '  &#bdc3c7•  ᴠậᴛ ᴘʜẩᴍ: &#3498db{current_items}'
+    - '  &#bdc3c7•  xᴘ: &#3498db{current_exp}'
+    - '  &#bdc3c7•  ɢɪá ᴛʀị: &#3498db{total_sell_price}đ'
+    - ''
+
 # ---------------------------------------------------
 #             Spawner Storage GUI
 # ---------------------------------------------------
+# Available placeholders for gui_title_storage:
+# {current_page}     - Current page number
+# {total_pages}      - Total number of pages
+# {entity}           - Formatted entity name (e.g., "Zombie")
+# {ᴇɴᴛɪᴛʏ}           - Entity name in small caps (e.g., "ᴢᴏᴍʙɪᴇ")
+# {amount}           - Number of spawners stacked
+
 gui_title_storage: '&#545454ᴋʜᴏ ꜱᴘᴀᴡɴᴇʀ - [{current_page}/{total_pages}]'
 
 navigation_button_previous:
@@ -178,9 +244,14 @@ navigation_button_next:
     - '&#2cc483⊳ &#f8f8ffɴʜấᴘ để đếɴ ᴛʀᴀɴɢ &#37eb9a{target_page}'
 
 sell_button:
-  name: '&aʙáɴ ᴠậᴛ ᴘʜẩᴍ: +${total_sell_price}'
+  name: '&aʙáɴ ᴠậᴛ ᴘʜẩᴍ: +{total_sell_price}$'
   lore:
     - '&a⊳ &#f8f8ffɴʜấᴘ để ʙáɴ ᴛấᴛ ᴄả ᴠậᴛ ᴘʜẩᴍ'
+
+sell_and_exp_button:
+  name: '&aʙáɴ & ɴʜậɴ ᴇxᴘ: +{total_sell_price}đ'
+  lore:
+    - '&a⊳ &#f8f8ffɴʜấᴘ để ʙáɴ ᴠậᴛ ᴘʜẩᴍ ᴠà ɴʜậɴ ᴋɪɴʜ ɴɢʜɪệᴍ'
 
 return_button:
   name: '&#ff5252ᴛʀở ᴠề ᴍᴇɴᴜ ᴄʜíɴʜ'
@@ -211,6 +282,12 @@ drop_page_button:
   name: '&#607D8Bᴛʜả ᴠậᴛ ᴘʜẩᴍ'
   lore:
     - '&#607D8B⊳ &#f8f8ffɴʜấɴ để ᴛʜả ᴛấᴛ ᴄả ᴠậᴛ ᴘʜẩᴍ'
+
+collect_exp_button:
+  # Available placeholders: {current_exp}
+  name: '&#2ecc71ɴʜậɴ ᴇxᴘ: &#f8f8ff{current_exp} &#2ecc71xᴘ'
+  lore:
+    - '&#2ecc71⊳ &#f8f8ffɴʜấᴘ để ɴʜậɴ ᴇxᴘ'
 
 
 # ---------------------------------------------------

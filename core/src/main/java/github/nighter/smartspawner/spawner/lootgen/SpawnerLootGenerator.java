@@ -215,7 +215,7 @@ public class SpawnerLootGenerator {
 
                     if (totalAmount > 0) {
                         // Add to consolidated map
-                        consolidatedLoot.merge(prototype, totalAmount, Integer::sum);
+                        consolidatedLoot.merge(prototype, totalAmount, (a, b) -> a + b);
                     }
                 }
             }
@@ -262,8 +262,9 @@ public class SpawnerLootGenerator {
 
             // Add to simulation and check slot count
             Map<VirtualInventory.ItemSignature, Long> tempSimulation = new HashMap<>(simulatedInventory);
-            VirtualInventory.ItemSignature sig = new VirtualInventory.ItemSignature(item);
-            tempSimulation.merge(sig, (long) item.getAmount(), Long::sum);
+            // Use cached signature to avoid excessive cloning
+            VirtualInventory.ItemSignature sig = VirtualInventory.getSignature(item);
+            tempSimulation.merge(sig, (long) item.getAmount(), (a, b) -> a + b);
 
             // Calculate slots needed
             int slotsNeeded = calculateSlots(tempSimulation);
@@ -289,7 +290,7 @@ public class SpawnerLootGenerator {
                         acceptedItems.add(partialItem);
 
                         // Update simulation
-                        simulatedInventory.merge(sig, (long) partialItem.getAmount(), Long::sum);
+                        simulatedInventory.merge(sig, (long) partialItem.getAmount(), (a, b) -> a + b);
                     }
                 }
 
@@ -326,8 +327,9 @@ public class SpawnerLootGenerator {
         for (ItemStack item : items) {
             if (item == null || item.getAmount() <= 0) continue;
 
-            VirtualInventory.ItemSignature sig = new VirtualInventory.ItemSignature(item);
-            simulatedItems.merge(sig, (long) item.getAmount(), Long::sum);
+            // Use cached signature to avoid excessive cloning
+            VirtualInventory.ItemSignature sig = VirtualInventory.getSignature(item);
+            simulatedItems.merge(sig, (long) item.getAmount(), (a, b) -> a + b);
         }
 
         // Calculate exact slots needed

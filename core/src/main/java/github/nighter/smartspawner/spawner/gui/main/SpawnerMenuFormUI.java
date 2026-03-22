@@ -121,7 +121,7 @@ public class SpawnerMenuFormUI {
                         Scheduler.runTask(() -> {
                             switch (buttonInfo.action) {
                                 case "open_storage":
-                                    plugin.getSpawnerMenuAction().handleStorageClickBedrock(player, spawner);
+                                    plugin.getSpawnerMenuAction().handleStorageClick(player, spawner);
                                     break;
                                 case "open_stacker":
                                     handleSpawnerInfo(player, spawner);
@@ -248,8 +248,16 @@ public class SpawnerMenuFormUI {
             messageService.sendMessage(player, "no_permission");
             return;
         }
-        plugin.getSpawnerMenuAction().handleExpBottleClick(player, spawner, true);
-        plugin.getSpawnerSellManager().sellAllItems(player, spawner);
+
+        // If no items to sell, still collect exp
+        if (spawner.getVirtualInventory().getUsedSlots() == 0) {
+            plugin.getSpawnerMenuAction().handleExpBottleClick(player, spawner, false);
+            return;
+        }
+
+        // Open confirmation GUI with exp collection enabled for Bedrock players
+        plugin.getSpawnerSellConfirmUI().openSellConfirmGui(player, spawner,
+            github.nighter.smartspawner.spawner.gui.sell.SpawnerSellConfirmUI.PreviousGui.MAIN_MENU, true);
     }
 
     private void handleSellAll(Player player, SpawnerData spawner) {
@@ -257,7 +265,16 @@ public class SpawnerMenuFormUI {
             messageService.sendMessage(player, "no_permission");
             return;
         }
-        plugin.getSpawnerSellManager().sellAllItems(player, spawner);
+
+        // Check if there are items to sell
+        if (spawner.getVirtualInventory().getUsedSlots() == 0) {
+            messageService.sendMessage(player, "no_items");
+            return;
+        }
+
+        // Open confirmation GUI without exp collection for Bedrock players
+        plugin.getSpawnerSellConfirmUI().openSellConfirmGui(player, spawner,
+            github.nighter.smartspawner.spawner.gui.sell.SpawnerSellConfirmUI.PreviousGui.MAIN_MENU, false);
     }
 
     private void handleExpCollection(Player player, SpawnerData spawner) {
@@ -300,7 +317,6 @@ public class SpawnerMenuFormUI {
         placeholders.put("ᴇɴᴛɪᴛʏ", entityNameSmallCaps);
         placeholders.put("entity", entityName);
         placeholders.put("amount", String.valueOf(spawner.getStackSize()));
-        placeholders.put("entity_type", spawner.getEntityType().toString());
 
         // Stack information
         placeholders.put("stack_size", String.valueOf(spawner.getStackSize()));

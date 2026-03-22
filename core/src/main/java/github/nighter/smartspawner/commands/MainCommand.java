@@ -7,9 +7,9 @@ import github.nighter.smartspawner.commands.clear.ClearSubCommand;
 import github.nighter.smartspawner.commands.give.GiveSubCommand;
 import github.nighter.smartspawner.commands.hologram.HologramSubCommand;
 import github.nighter.smartspawner.commands.list.ListSubCommand;
+import github.nighter.smartspawner.commands.near.NearSubCommand;
 import github.nighter.smartspawner.commands.prices.PricesSubCommand;
 import github.nighter.smartspawner.commands.reload.ReloadSubCommand;
-import github.nighter.smartspawner.language.MessageService;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import lombok.RequiredArgsConstructor;
@@ -24,20 +24,17 @@ import java.util.List;
 @NullMarked
 @RequiredArgsConstructor
 public class MainCommand {
-    private final SmartSpawner plugin;
-    private final MessageService messageService;
     private final List<BaseSubCommand> subCommands;
 
     public MainCommand(SmartSpawner plugin) {
-        this.plugin = plugin;
-        this.messageService = plugin.getMessageService();
         this.subCommands = List.of(
                 new ReloadSubCommand(plugin),
                 new GiveSubCommand(plugin),
                 new ListSubCommand(plugin),
                 new HologramSubCommand(plugin),
                 new PricesSubCommand(plugin),
-                new ClearSubCommand(plugin)
+                new ClearSubCommand(plugin),
+                new NearSubCommand(plugin, plugin.getSpawnerHighlightManager())
         );
     }
 

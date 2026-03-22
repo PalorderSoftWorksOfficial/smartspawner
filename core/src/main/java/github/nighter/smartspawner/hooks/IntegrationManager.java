@@ -99,6 +99,10 @@ public class IntegrationManager {
             if (simpleClaimPlugin == null || !simpleClaimPlugin.isEnabled()) {
                 return false;
             }
+            // Prevent SimpleClaimSystem paid version (2.x.x)
+            if (simpleClaimPlugin.getPluginMeta().getVersion().startsWith("2.")) {
+                return false;
+            }
             SimpleClaimSystemAPI_Provider.initialize((SimpleClaimSystem) simpleClaimPlugin);
             return SimpleClaimSystemAPI_Provider.getAPI() != null;
         }, true);
@@ -108,8 +112,8 @@ public class IntegrationManager {
             return pRP != null && pRP.isEnabled();
         }, true);
 
-        hasMinePlots = checkPlugin("MinePlots", () -> {
-            Plugin mP = Bukkit.getPluginManager().getPlugin("MinePlots");
+        hasMinePlots = checkPlugin("minePlots", () -> {
+            Plugin mP = Bukkit.getPluginManager().getPlugin("minePlots");
             return mP != null && mP.isEnabled();
         }, true);
 

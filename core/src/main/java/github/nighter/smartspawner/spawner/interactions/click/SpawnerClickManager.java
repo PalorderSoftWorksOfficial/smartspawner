@@ -2,6 +2,7 @@ package github.nighter.smartspawner.spawner.interactions.click;
 
 import github.nighter.smartspawner.SmartSpawner;
 import github.nighter.smartspawner.hooks.protections.CheckOpenMenu;
+import github.nighter.smartspawner.hooks.bedrock.FloodgateHook;
 import github.nighter.smartspawner.language.MessageService;
 import github.nighter.smartspawner.spawner.gui.main.SpawnerMenuUI;
 import github.nighter.smartspawner.spawner.gui.main.SpawnerMenuFormUI;
@@ -40,6 +41,10 @@ public class SpawnerClickManager implements Listener {
     // Use ConcurrentHashMap for thread safety without explicit synchronization
     private final Map<UUID, Long> playerCooldowns = new ConcurrentHashMap<>();
 
+    // Cached config values for performance (avoid repeated lookups)
+    private boolean skipMainGui = false;
+    private FloodgateHook floodgateHook = null;
+
     public SpawnerClickManager(SmartSpawner plugin) {
         this.plugin = plugin;
         this.messageService = plugin.getMessageService();
@@ -48,7 +53,24 @@ public class SpawnerClickManager implements Listener {
         this.spawnerStackHandler = plugin.getSpawnerStackHandler();
         this.spawnerMenuUI = plugin.getSpawnerMenuUI();
         this.spawnerMenuFormUI = plugin.getSpawnerMenuFormUI();
+
+        // Load cached config values
+        loadConfig();
         initCleanupTask();
+    }
+
+    /**
+     * Load and cache configuration values for performance.
+     * Should be called on initialization and after config reload.
+     */
+    public void loadConfig() {
+        // Cache skip_main_gui setting
+        this.skipMainGui = plugin.getGuiLayoutConfig().isSkipMainGui();
+
+        // Cache FloodgateHook reference
+        if (plugin.getIntegrationManager() != null) {
+            this.floodgateHook = plugin.getIntegrationManager().getFloodgateHook();
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -79,11 +101,6 @@ public class SpawnerClickManager implements Listener {
 
         // Allow normal block placement when sneaking with placeable block
         if (shouldAllowNormalBlockPlacement(player, itemType)) {
-            return;
-        }
-
-        // Special handling for Bedrock players using tools
-        if (isBedrockPlayerUsingTool(player, itemType)) {
             return;
         }
 
@@ -119,20 +136,6 @@ public class SpawnerClickManager implements Listener {
 
     private boolean shouldAllowNormalBlockPlacement(Player player, Material itemType) {
         return player.isSneaking() && itemType.isBlock() && itemType != Material.SPAWNER;
-    }
-
-    private boolean isBedrockPlayerUsingTool(Player player, Material itemType) {
-        if (!isBedrockPlayer(player)) {
-            return false;
-        }
-
-        String itemName = itemType.name();
-        boolean isTool = itemName.endsWith("_PICKAXE") ||
-                itemName.endsWith("_SHOVEL") ||
-                itemName.endsWith("_HOE") ||
-                itemName.endsWith("_AXE");
-
-        return isTool;
     }
 
     private boolean isArmor(Material material) {
@@ -178,8 +181,15 @@ public class SpawnerClickManager implements Listener {
     }
 
     private void openSpawnerMenu(Player player, SpawnerData spawner) {
-        // Check if the player is a Bedrock player and use FormUI
-        if (isBedrockPlayer(player)) {
+        // Use cached value for performance (no method calls)
+        if (skipMainGui) {
+            // Open storage GUI directly
+            openStorageGui(player, spawner);
+            return;
+        }
+
+        // Use cached FloodgateHook for performance
+        if (floodgateHook != null && floodgateHook.isBedrockPlayer(player)) {
             if (spawnerMenuFormUI != null) {
                 spawnerMenuFormUI.openSpawnerForm(player, spawner);
             } else {
@@ -192,16 +202,15 @@ public class SpawnerClickManager implements Listener {
         }
     }
 
-    private boolean isSpawnEgg(Material material) {
-        return material.name().endsWith("_SPAWN_EGG");
+    private void openStorageGui(Player player, SpawnerData spawner) {
+        org.bukkit.inventory.Inventory storageInventory = plugin.getSpawnerStorageUI()
+                .createStorageInventory(spawner, 1, -1);
+        player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_CHEST_OPEN, 1.0f, 1.0f);
+        player.openInventory(storageInventory);
     }
 
-    private boolean isBedrockPlayer(Player player) {
-        if (plugin.getIntegrationManager() == null || 
-            plugin.getIntegrationManager().getFloodgateHook() == null) {
-            return false;
-        }
-        return plugin.getIntegrationManager().getFloodgateHook().isBedrockPlayer(player);
+    private boolean isSpawnEgg(Material material) {
+        return material.name().endsWith("_SPAWN_EGG");
     }
 
     private void initCleanupTask() {

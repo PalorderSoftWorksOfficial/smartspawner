@@ -82,9 +82,75 @@ button_add:
     - ''
     - '&#2cc483⊳ &#f8f8ffᴄʟɪᴄᴋ ᴛᴏ ᴀᴅᴅ ᴛᴏ ꜱᴛᴀᴄᴋ'
 
+button_remove_all:
+  name: '&#ff5252ʀᴇᴍᴏᴠᴇ ᴀʟʟ'
+  lore:
+    - ''
+    - '&#e63939◈ &#ff7070ᴀᴄᴛɪᴏɴ:'
+    - '  &#f8f8ff•  ʀᴇᴍᴏᴠᴇ ᴀʟʟ ꜱᴘᴀᴡɴᴇʀꜱ'
+    - '  &#f8f8ff•  ᴄᴜʀʀᴇɴᴛ: &#ff5252{stack_size}'
+    - ''
+    - '&#e63939⊳ &#f8f8ffᴄʟɪᴄᴋ ᴛᴏ ʀᴇᴍᴏᴠᴇ ᴀʟʟ ꜰʀᴏᴍ ꜱᴛᴀᴄᴋ'
+
+button_add_all:
+  name: '&#37eb9aᴀᴅᴅ ᴀʟʟ'
+  lore:
+    - ''
+    - '&#2cc483◈ &#48e89bᴀᴄᴛɪᴏɴ:'
+    - '  &#f8f8ff•  ᴀᴅᴅ ᴀʟʟ ꜱᴘᴀᴡɴᴇʀꜱ ꜰʀᴏᴍ ɪɴᴠᴇɴᴛᴏʀʏ'
+    - '  &#f8f8ff•  ᴄᴜʀʀᴇɴᴛ: &#37eb9a{stack_size}'
+    - ''
+    - '&#2cc483⊳ &#f8f8ffᴄʟɪᴄᴋ ᴛᴏ ᴀᴅᴅ ᴀʟʟ ᴛᴏ ꜱᴛᴀᴄᴋ'
+
+# ---------------------------------------------------
+#            Sell Confirmation GUI
+# ---------------------------------------------------
+gui_title_sell_confirm: '&#545454ᴄᴏɴꜰɪʀᴍ ꜱᴇʟʟ'
+
+button_sell_cancel:
+  name: '&#e74c3c✖ ᴄᴀɴᴄᴇʟ'
+  lore:
+    - ''
+    - '&#e74c3c⊳ &#ecf0f1ᴄʟɪᴄᴋ ᴛᴏ ᴄᴀɴᴄᴇʟ'
+
+button_sell_confirm:
+  name: '&#2ecc71✔ ᴄᴏɴꜰɪʀᴍ ꜱᴇʟʟ'
+  lore:
+    - ''
+    - '&#2ecc71◈ &#48e89bʀᴇᴄᴇɪᴠᴇ:'
+    - '  &#f8f8ff•  ᴍᴏɴᴇʏ: &#2ecc71${total_sell_price}'
+    - ''
+    - '&#2ecc71⊳ &#f8f8ffᴄʟɪᴄᴋ ᴛᴏ ᴄᴏɴꜰɪʀᴍ'
+
+button_sell_confirm_with_exp:
+  name: '&#2ecc71✔ ᴄᴏɴꜰɪʀᴍ ꜱᴇʟʟ'
+  lore:
+    - ''
+    - '&#2ecc71◈ &#48e89bʀᴇᴄᴇɪᴠᴇ:'
+    - '  &#f8f8ff•  ᴍᴏɴᴇʏ: &#2ecc71${total_sell_price}'
+    - '  &#f8f8ff•  xᴘ: &#2ecc71{current_exp}'
+    - ''
+    - '&#2ecc71⊳ &#f8f8ffᴄʟɪᴄᴋ ᴛᴏ ᴄᴏɴꜰɪʀᴍ'
+
+button_sell_info:
+  name: '&#3498db{ᴇɴᴛɪᴛʏ} ꜱᴘᴀᴡɴᴇʀ'
+  lore:
+    - ''
+    - '&#3498db◈ &#ecf0f1ꜱᴛᴏʀᴀɢᴇ ɪɴꜰᴏ:'
+    - '  &#bdc3c7•  ɪᴛᴇᴍꜱ: &#3498db{current_items}'
+    - '  &#bdc3c7•  xᴘ: &#3498db{current_exp}'
+    - '  &#bdc3c7•  ᴠᴀʟᴜᴇ: &#3498db${total_sell_price}'
+    - ''
+
 # ---------------------------------------------------
 #             Spawner Storage GUI
 # ---------------------------------------------------
+# Available placeholders for gui_title_storage:
+# {current_page}     - Current page number
+# {total_pages}      - Total number of pages
+# {entity}           - Formatted entity name (e.g., "Zombie")
+# {ᴇɴᴛɪᴛʏ}           - Entity name in small caps (e.g., "ᴢᴏᴍʙɪᴇ")
+# {amount}           - Number of spawners stacked
 gui_title_storage: "&#545454ꜱᴘᴀᴡɴᴇʀ ꜱᴛᴏʀᴀɢᴇ - [{current_page}/{total_pages}]"
 
 navigation_button_previous:
@@ -101,6 +167,11 @@ sell_button:
   name: '&#00F986ꜱᴇʟʟ ᴀʟʟ: +${total_sell_price}'
   lore:
     - '&fClick to sell all mob drops'
+
+sell_and_exp_button:
+  name: '&aꜱᴇʟʟ & ᴇxᴘ: +${total_sell_price}'
+  lore:
+    - '&fClick to sell items and collect experience'
 
 return_button:
   name: '&#FC0000ʀᴇᴛᴜʀɴ'
@@ -131,6 +202,12 @@ drop_page_button:
   name: '&#00F986ᴅʀᴏᴘ ʟᴏᴏᴛ'
   lore:
     - '&fClick to drop all the loot on the page'
+
+collect_exp_button:
+  # Available placeholders: {current_exp}
+  name: '&#2ecc71ᴄʟᴀɪᴍ ᴇxᴘ: &#f8f8ff{current_exp} &#2ecc71xᴘ'
+  lore:
+    - '&#2ecc71⊳ &fClick to claim your XP'
 
 # ---------------------------------------------------
 #             Filter Configuration GUI

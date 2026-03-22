@@ -6,7 +6,6 @@ import github.nighter.smartspawner.language.MessageService;
 import github.nighter.smartspawner.spawner.gui.synchronization.SpawnerGuiViewManager;
 import github.nighter.smartspawner.spawner.properties.SpawnerData;
 import github.nighter.smartspawner.spawner.properties.VirtualInventory;
-import github.nighter.smartspawner.Scheduler;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -62,19 +61,16 @@ public class SpawnerSellManager {
                 // Get all items for processing
                 Map<VirtualInventory.ItemSignature, Long> consolidatedItems = virtualInv.getConsolidatedItems();
 
-                // Process selling async to avoid blocking main thread
-                Scheduler.runTaskAsync(() -> {
-                    // Use cached sell value for optimization
-                    SellResult result = calculateSellValue(consolidatedItems, spawner);
 
-                    // Store the result in SpawnerData for later access
-                    spawner.setLastSellResult(result);
+                // Process selling synchronously to prevent race conditions
+                // Use cached sell value for optimization
+                SellResult result = calculateSellValue(consolidatedItems, spawner);
 
-                    // Return to main thread for inventory operations and player interaction
-                    Scheduler.runLocationTask(spawner.getSpawnerLocation(), () -> {
-                        processSellResult(player, spawner, result);
-                    });
-                });
+                // Store the result in SpawnerData for later access
+                spawner.setLastSellResult(result);
+
+                // Process result immediately on main thread
+                processSellResult(player, spawner, result);
 
             } finally {
                 spawner.getSellLock().unlock();
@@ -120,7 +116,7 @@ public class SpawnerSellManager {
                     if(event.isCancelled()) return;
                     if(event.getMoneyAmount() >= 0) amount = event.getMoneyAmount();
                 }
-                boolean depositSuccess = plugin.getItemPriceManager()
+                boolean depositSuccess = plugin.getItemPriceManager().getCurrencyManager()
                         .deposit(amount, player);
 
                 if (!depositSuccess) {
@@ -136,6 +132,8 @@ public class SpawnerSellManager {
                     plugin.getLogger().warning("Critical: Could not remove all items after depositing money for player " + 
                         player.getName() + " at spawner " + spawner.getSpawnerId() + ". Possible exploit detected.");
                     // Note: Money has already been deposited, so we can't easily roll back without complex transaction handling
+                    plugin.getItemPriceManager().getCurrencyManager().withdraw(amount, player);
+                    messageService.sendMessage(player, "sell_failed");
                 }
 
                 // Update spawner state
@@ -149,13 +147,17 @@ public class SpawnerSellManager {
 
                 // Update GUI viewers
                 spawnerGuiViewManager.updateSpawnerMenuViewers(spawner);
-                player.closeInventory();
+                // Note: Don't close inventory here - let the confirmation GUI handler reopen the previous GUI
+                // player.closeInventory();
 
                 // Send success message
                 Map<String, String> placeholders = new HashMap<>();
                 placeholders.put("amount", plugin.getLanguageManager().formatNumber(sellResult.getItemsSold()));
                 placeholders.put("price", plugin.getLanguageManager().formatNumber(amount));
                 messageService.sendMessage(player, "sell_success", placeholders);
+
+                // Play UI button click sound
+                player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
 
                 // Mark spawner as modified for saving
                 plugin.getSpawnerManager().markSpawnerModified(spawner.getSpawnerId());
@@ -174,29 +176,42 @@ public class SpawnerSellManager {
     /**
      * Calculates the total sell value of items using cached accumulated value
      * This method is optimized to use pre-calculated sell values
+     * OPTIMIZED: Single-pass iteration with progressive capacity adjustment
      */
     private SellResult calculateSellValue(Map<VirtualInventory.ItemSignature, Long> consolidatedItems,
                                           SpawnerData spawner) {
         // Use the accumulated sell value from spawner (already calculated incrementally)
         double totalValue = spawner.getAccumulatedSellValue();
         long totalItemsSold = 0;
-        List<ItemStack> itemsToRemove = new ArrayList<>();
 
-        // We still need to create the items list for removal
+        // Start with reasonable initial capacity (will grow progressively)
+        // Use ArrayList directly to access ensureCapacity method
+        ArrayList<ItemStack> itemsToRemove = new ArrayList<>();
+
+        // Single-pass iteration: calculate stacks needed AND create them
         for (Map.Entry<VirtualInventory.ItemSignature, Long> entry : consolidatedItems.entrySet()) {
-            ItemStack template = entry.getKey().getTemplate();
+            // Use getTemplateRef() to avoid cloning when reading properties
+            ItemStack templateRef = entry.getKey().getTemplateRef();
             long amount = entry.getValue();
-            
-            // Count items (we need this even if we skip price calculation)
+            int maxStackSize = templateRef.getMaxStackSize();
+
+            // Count items for statistics
             totalItemsSold += amount;
+
+            // Calculate how many stacks this item type needs
+            int stacksNeeded = (int) Math.ceil((double) amount / maxStackSize);
+
+            // Ensure capacity before adding to avoid resizing during loop
+            // This is cheaper than multiple resizes
+            itemsToRemove.ensureCapacity(itemsToRemove.size() + stacksNeeded);
 
             // Create ItemStacks to remove (handle stacking properly)
             long remainingAmount = amount;
             while (remainingAmount > 0) {
-                ItemStack stackToRemove = template.clone();
-                int stackSize = (int) Math.min(remainingAmount, template.getMaxStackSize());
+                ItemStack stackToRemove = templateRef.clone(); // Single clone per stack
+                int stackSize = (int) Math.min(remainingAmount, maxStackSize);
                 stackToRemove.setAmount(stackSize);
-                itemsToRemove.add(stackToRemove);
+                itemsToRemove.add(stackToRemove); // No resize thanks to ensureCapacity
                 remainingAmount -= stackSize;
             }
         }

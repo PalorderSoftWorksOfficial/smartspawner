@@ -53,7 +53,9 @@ public class LanguageManager {
         MESSAGES("messages.yml"),
         GUI("gui.yml"),
         FORMATTING("formatting.yml"),
-        ITEMS("items.yml");
+        ITEMS("items.yml"),
+        COMMAND_MESSAGES("command_messages.yml"),
+        HOLOGRAM("hologram.yml");
         private final String fileName;
         LanguageFileType(String fileName) {
             this.fileName = fileName;
@@ -157,6 +159,8 @@ public class LanguageManager {
                     new YamlConfiguration(),
                     new YamlConfiguration(),
                     new YamlConfiguration(),
+                    new YamlConfiguration(),
+                    new YamlConfiguration(),
                     new YamlConfiguration()
             );
             localeMap.put(defaultLocale, cachedDefaultLocaleData);
@@ -200,24 +204,39 @@ public class LanguageManager {
     private void updateLocaleData(String locale, LanguageFileType fileType, YamlConfiguration config) {
         LocaleData existingData = localeMap.getOrDefault(locale,
                 new LocaleData(new YamlConfiguration(), new YamlConfiguration(),
-                        new YamlConfiguration(), new YamlConfiguration()));
+                        new YamlConfiguration(), new YamlConfiguration(), new YamlConfiguration(),
+                        new YamlConfiguration()));
 
         switch (fileType) {
             case MESSAGES:
                 localeMap.put(locale, new LocaleData(config, existingData.gui(),
-                        existingData.formatting(), existingData.items()));
+                        existingData.formatting(), existingData.items(), existingData.commandMessages(),
+                        existingData.hologram()));
                 break;
             case GUI:
                 localeMap.put(locale, new LocaleData(existingData.messages(), config,
-                        existingData.formatting(), existingData.items()));
+                        existingData.formatting(), existingData.items(), existingData.commandMessages(),
+                        existingData.hologram()));
                 break;
             case FORMATTING:
                 localeMap.put(locale, new LocaleData(existingData.messages(), existingData.gui(),
-                        config, existingData.items()));
+                        config, existingData.items(), existingData.commandMessages(),
+                        existingData.hologram()));
                 break;
             case ITEMS:
                 localeMap.put(locale, new LocaleData(existingData.messages(), existingData.gui(),
-                        existingData.formatting(), config));
+                        existingData.formatting(), config, existingData.commandMessages(),
+                        existingData.hologram()));
+                break;
+            case COMMAND_MESSAGES:
+                localeMap.put(locale, new LocaleData(existingData.messages(), existingData.gui(),
+                        existingData.formatting(), existingData.items(), config,
+                        existingData.hologram()));
+                break;
+            case HOLOGRAM:
+                localeMap.put(locale, new LocaleData(existingData.messages(), existingData.gui(),
+                        existingData.formatting(), existingData.items(), existingData.commandMessages(),
+                        config));
                 break;
         }
     }
@@ -323,6 +342,8 @@ public class LanguageManager {
         YamlConfiguration gui = null;
         YamlConfiguration formatting = null;
         YamlConfiguration items = null;
+        YamlConfiguration commandMessages = null;
+        YamlConfiguration hologram = null;
 
         for (LanguageFileType fileType : fileTypes) {
             switch (fileType) {
@@ -338,6 +359,12 @@ public class LanguageManager {
                 case ITEMS:
                     items = loadOrCreateFile(locale, fileType.getFileName());
                     break;
+                case COMMAND_MESSAGES:
+                    commandMessages = loadOrCreateFile(locale, fileType.getFileName());
+                    break;
+                case HOLOGRAM:
+                    hologram = loadOrCreateFile(locale, fileType.getFileName());
+                    break;
             }
         }
 
@@ -346,20 +373,33 @@ public class LanguageManager {
         if (gui == null) gui = new YamlConfiguration();
         if (formatting == null) formatting = new YamlConfiguration();
         if (items == null) items = new YamlConfiguration();
+        if (commandMessages == null) commandMessages = new YamlConfiguration();
+        if (hologram == null) hologram = new YamlConfiguration();
 
-        localeMap.put(locale, new LocaleData(messages, gui, formatting, items));
+        localeMap.put(locale, new LocaleData(messages, gui, formatting, items, commandMessages, hologram));
     }
 
     //---------------------------------------------------
     //               Messages Methods
     //---------------------------------------------------
 
+    /**
+     * Looks up a message key first in command_messages.yml, then falls back to messages.yml.
+     */
+    private String resolveMessageString(String path) {
+        String value = cachedDefaultLocaleData.commandMessages().getString(path);
+        if (value == null) {
+            value = cachedDefaultLocaleData.messages().getString(path);
+        }
+        return value;
+    }
+
     public String getMessage(String key, Map<String, String> placeholders) {
         if (!isMessageEnabled(key)) {
             return null;
         }
 
-        String message = cachedDefaultLocaleData.messages().getString(key + ".message");
+        String message = resolveMessageString(key + ".message");
 
         if (message == null) {
             return "Missing message: " + key;
@@ -378,7 +418,7 @@ public class LanguageManager {
             return null;
         }
 
-        String message = cachedDefaultLocaleData.messages().getString(key + ".message");
+        String message = resolveMessageString(key + ".message");
 
         if (message == null) {
             return "Missing message: " + key;
@@ -393,7 +433,7 @@ public class LanguageManager {
             return null;
         }
 
-        String message = cachedDefaultLocaleData.messages().getString(key + ".message");
+        String message = resolveMessageString(key + ".message");
 
         if (message == null) {
             return "Missing message: " + key;
@@ -427,8 +467,11 @@ public class LanguageManager {
         if (!isMessageEnabled(key)) {
             return null;
         }
-
-        return cachedDefaultLocaleData.messages().getString(key + ".sound");
+        String sound = cachedDefaultLocaleData.commandMessages().getString(key + ".sound");
+        if (sound == null) {
+            sound = cachedDefaultLocaleData.messages().getString(key + ".sound");
+        }
+        return sound;
     }
 
     private String getPrefix() {
@@ -436,7 +479,10 @@ public class LanguageManager {
     }
 
     String getRawMessage(String path, Map<String, String> placeholders) {
-        String message = cachedDefaultLocaleData.messages().getString(path);
+        String message = cachedDefaultLocaleData.commandMessages().getString(path);
+        if (message == null) {
+            message = cachedDefaultLocaleData.messages().getString(path);
+        }
 
         if (message == null) {
             return null;  // Return null instead of error message
@@ -447,11 +493,37 @@ public class LanguageManager {
 
     private boolean isMessageEnabled(String key) {
         // Check if this message has an enabled flag, default to true if not specified
-        return cachedDefaultLocaleData.messages().getBoolean(key + ".enabled", true);
+        boolean enabledInCmd = cachedDefaultLocaleData.commandMessages().getBoolean(key + ".enabled", true);
+        // If the key doesn't exist in commandMessages at all, also check messages
+        if (!cachedDefaultLocaleData.commandMessages().contains(key)) {
+            return cachedDefaultLocaleData.messages().getBoolean(key + ".enabled", true);
+        }
+        return enabledInCmd;
     }
 
     public boolean keyExists(String key) {
-        return cachedDefaultLocaleData.messages().contains(key);
+        return cachedDefaultLocaleData.commandMessages().contains(key)
+                || cachedDefaultLocaleData.messages().contains(key);
+    }
+
+    /**
+     * Returns a raw (colour-formatted) string from command_messages.yml at an arbitrary path.
+     * Useful for reading component/bossbar text that does not follow the standard message key format.
+     * Returns {@code defaultValue} if the key is absent.
+     */
+    public String getCommandConfig(String path, String defaultValue) {
+        String value = cachedDefaultLocaleData.commandMessages().getString(path);
+        if (value == null) return defaultValue;
+        return applyPlaceholdersAndColors(value, EMPTY_PLACEHOLDERS);
+    }
+
+    /**
+     * Returns a raw string from command_messages.yml with placeholder substitution.
+     */
+    public String getCommandConfig(String path, String defaultValue, Map<String, String> placeholders) {
+        String value = cachedDefaultLocaleData.commandMessages().getString(path);
+        if (value == null) return defaultValue;
+        return applyPlaceholdersAndColors(value, placeholders);
     }
 
     //---------------------------------------------------
@@ -1089,21 +1161,27 @@ public class LanguageManager {
     //---------------------------------------------------
 
     public String getHologramText() {
-        // Check if the text exists in the config
-        if (plugin.getConfig().contains("hologram.text")) {
-            // Get as string list for multi-line support
-            List<String> lines = plugin.getConfig().getStringList("hologram.text");
-
-            // Join lines with newline characters
+        // Try reading from per-language hologram.yml first
+        YamlConfiguration hologramCfg = cachedDefaultLocaleData.hologram();
+        if (hologramCfg != null && hologramCfg.contains("text")) {
+            List<String> lines = hologramCfg.getStringList("text");
             if (!lines.isEmpty()) {
                 return String.join("\n", lines);
             }
+            String single = hologramCfg.getString("text");
+            if (single != null) return single;
+        }
 
-            // Fallback to string if list is empty or not properly defined
+        // Fallback: legacy hologram.text key in config.yml
+        if (plugin.getConfig().contains("hologram.text")) {
+            List<String> lines = plugin.getConfig().getStringList("hologram.text");
+            if (!lines.isEmpty()) {
+                return String.join("\n", lines);
+            }
             return plugin.getConfig().getString("hologram.text");
         }
 
-        // Default value if not defined
+        // Default value if not defined anywhere
         return "&e%entity% Spawner &7[&f%stack_size%x&7]\n" +
                 "&7XP: &a%current_exp%&7/&a%max_exp%\n" +
                 "&7Items: &a%used_slots%&7/&a%max_slots%";

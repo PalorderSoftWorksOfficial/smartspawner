@@ -64,7 +64,6 @@ spawner_storage_item:
 # Entity Information:
 # {entity}           - Formatted entity name (e.g., "Zombie")
 # {ᴇɴᴛɪᴛʏ}           - Entity name in small caps (e.g., "ᴢᴏᴍʙɪᴇ")
-# {entity_type}      - Raw entity type (e.g., "ZOMBIE")
 #
 # Stack Information:
 # {stack_size}       - Number of spawners stacked at this location
@@ -163,9 +162,75 @@ button_add:
     - ''
     - '&#2cc483⊳ &#f8f8ffᴄʟɪᴄᴋ ᴛᴏ ᴀᴅᴅ ᴛᴏ ꜱᴛᴀᴄᴋ'
 
+button_remove_all:
+  name: '&#ff5252ʀᴇᴍᴏᴠᴇ ᴀʟʟ'
+  lore:
+    - ''
+    - '&#e63939◈ &#ff7070ᴀᴄᴛɪᴏɴ:'
+    - '  &#f8f8ff•  ʀᴇᴍᴏᴠᴇ ᴀʟʟ ꜱᴘᴀᴡɴᴇʀꜱ'
+    - '  &#f8f8ff•  ᴄᴜʀʀᴇɴᴛ: &#ff5252{stack_size}'
+    - ''
+    - '&#e63939⊳ &#f8f8ffᴄʟɪᴄᴋ ᴛᴏ ʀᴇᴍᴏᴠᴇ ᴀʟʟ ꜰʀᴏᴍ ꜱᴛᴀᴄᴋ'
+
+button_add_all:
+  name: '&#37eb9aᴀᴅᴅ ᴀʟʟ'
+  lore:
+    - ''
+    - '&#2cc483◈ &#48e89bᴀᴄᴛɪᴏɴ:'
+    - '  &#f8f8ff•  ᴀᴅᴅ ᴀʟʟ ꜱᴘᴀᴡɴᴇʀꜱ ꜰʀᴏᴍ ɪɴᴠᴇɴᴛᴏʀʏ'
+    - '  &#f8f8ff•  ᴄᴜʀʀᴇɴᴛ: &#37eb9a{stack_size}'
+    - ''
+    - '&#2cc483⊳ &#f8f8ffᴄʟɪᴄᴋ ᴛᴏ ᴀᴅᴅ ᴀʟʟ ᴛᴏ ꜱᴛᴀᴄᴋ'
+
+# ---------------------------------------------------
+#            Sell Confirmation GUI
+# ---------------------------------------------------
+gui_title_sell_confirm: '&#545454ᴄᴏɴꜰɪʀᴍ ꜱᴇʟʟ'
+
+button_sell_cancel:
+  name: '&#e74c3c✖ ᴄᴀɴᴄᴇʟ'
+  lore:
+    - ''
+    - '&#e74c3c⊳ &#ecf0f1ᴄʟɪᴄᴋ ᴛᴏ ᴄᴀɴᴄᴇʟ'
+
+button_sell_confirm:
+  name: '&#2ecc71✔ ᴄᴏɴꜰɪʀᴍ ꜱᴇʟʟ'
+  lore:
+    - ''
+    - '&#2ecc71◈ &#48e89bʀᴇᴄᴇɪᴠᴇ:'
+    - '  &#f8f8ff•  ᴍᴏɴᴇʏ: &#2ecc71${total_sell_price}'
+    - ''
+    - '&#2ecc71⊳ &#f8f8ffᴄʟɪᴄᴋ ᴛᴏ ᴄᴏɴꜰɪʀᴍ'
+
+button_sell_confirm_with_exp:
+  name: '&#2ecc71✔ ᴄᴏɴꜰɪʀᴍ ꜱᴇʟʟ & ᴄᴏʟʟᴇᴄᴛ xᴘ'
+  lore:
+    - ''
+    - '&#2ecc71◈ &#48e89bʀᴇᴄᴇɪᴠᴇ:'
+    - '  &#f8f8ff•  ᴍᴏɴᴇʏ: &#2ecc71${total_sell_price}'
+    - '  &#f8f8ff•  xᴘ: &#2ecc71{current_exp}'
+    - ''
+    - '&#2ecc71⊳ &#f8f8ffᴄʟɪᴄᴋ ᴛᴏ ᴄᴏɴꜰɪʀᴍ'
+
+button_sell_info:
+  name: '&#3498db{ᴇɴᴛɪᴛʏ} ꜱᴘᴀᴡɴᴇʀ'
+  lore:
+    - ''
+    - '&#3498db◈ &#ecf0f1ꜱᴛᴏʀᴀɢᴇ ɪɴꜰᴏ:'
+    - '  &#bdc3c7•  ɪᴛᴇᴍꜱ: &#3498db{current_items}'
+    - '  &#bdc3c7•  xᴘ: &#3498db{current_exp}'
+    - '  &#bdc3c7•  ᴠᴀʟᴜᴇ: &#3498db${total_sell_price}'
+    - ''
+
 # ---------------------------------------------------
 #             Spawner Storage GUI
 # ---------------------------------------------------
+# Available placeholders for gui_title_storage:
+# {current_page}     - Current page number
+# {total_pages}      - Total number of pages
+# {entity}           - Formatted entity name (e.g., "Zombie")
+# {ᴇɴᴛɪᴛʏ}           - Entity name in small caps (e.g., "ᴢᴏᴍʙɪᴇ")
+# {amount}           - Number of spawners stacked
 gui_title_storage: '&#545454ꜱᴘᴀᴡɴᴇʀ ꜱᴛᴏʀᴀɢᴇ - [{current_page}/{total_pages}]'
 
 navigation_button_previous:
@@ -182,6 +247,11 @@ sell_button:
   name: '&aꜱᴇʟʟ ᴀʟʟ ɪᴛᴇᴍꜱ: +${total_sell_price}'
   lore:
     - '&a⊳ &#f8f8ffᴄʟɪᴄᴋ ᴛᴏ ꜱᴇʟʟ ᴀʟʟ ɪᴛᴇᴍꜱ'
+
+sell_and_exp_button:
+  name: '&aꜱᴇʟʟ & ᴄᴏʟʟᴇᴄᴛ ᴇxᴘ: +${total_sell_price}'
+  lore:
+    - '&a⊳ &#f8f8ffᴄʟɪᴄᴋ ᴛᴏ ꜱᴇʟʟ ɪᴛᴇᴍꜱ ᴀɴᴅ ᴄᴏʟʟᴇᴄᴛ ᴇxᴘ'
 
 return_button:
   name: '&#ff5252ʀᴇᴛᴜʀɴ ᴛᴏ ᴍᴀɪɴ ᴍᴇɴᴜ'
@@ -212,6 +282,12 @@ drop_page_button:
   name: '&#607D8Bᴅʀᴏᴘ ᴀʟʟ ɪᴛᴇᴍꜱ'
   lore:
     - '&#607D8B⊳ &#f8f8ffᴄʟɪᴄᴋ ᴛᴏ ᴅʀᴏᴘ ᴀʟʟ ɪᴛᴇᴍꜱ'
+
+collect_exp_button:
+  # Available placeholders: {current_exp}
+  name: '&#2ecc71ᴄᴏʟʟᴇᴄᴛ ᴇxᴘ: &#f8f8ff{current_exp} &#2ecc71xᴘ'
+  lore:
+    - '&#2ecc71⊳ &#f8f8ffᴄʟɪᴄᴋ ᴛᴏ ᴄᴏʟʟᴇᴄᴛ xᴘ'
 
 # ---------------------------------------------------
 #             Filter Configuration GUI
@@ -421,7 +497,7 @@ bedrock:
 
     # Spawner Info Configuration (displayed below buttons in Bedrock UI)
     # Available placeholders (same as spawner_info_item):
-    # Entity: {entity}, {ᴇɴᴛɪᴛʏ}, {entity_type}
+    # Entity: {entity}, {ᴇɴᴛɪᴛʏ},
     # Stack: {stack_size}
     # Settings: {range}, {delay}, {delay_raw}, {min_mobs}, {max_mobs}
     # Storage: {current_items}, {max_items}, {percent_storage_decimal}

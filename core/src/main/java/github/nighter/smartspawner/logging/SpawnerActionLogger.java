@@ -4,7 +4,7 @@ import github.nighter.smartspawner.Scheduler;
 import github.nighter.smartspawner.SmartSpawner;
 import github.nighter.smartspawner.logging.discord.DiscordWebhookConfig;
 import github.nighter.smartspawner.logging.discord.DiscordWebhookLogger;
-import org.bukkit.Bukkit;
+import github.nighter.smartspawner.logging.discord.DiscordEmbedConfigManager;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -46,10 +46,11 @@ public class SpawnerActionLogger {
             startLoggingTask();
         }
         
-        // Initialize Discord webhook logger
+        // Initialize Discord webhook logger (only when enabled – no memory cost otherwise)
         DiscordWebhookConfig discordConfig = new DiscordWebhookConfig(plugin);
         if (discordConfig.isEnabled()) {
-            this.discordLogger = new DiscordWebhookLogger(plugin, discordConfig);
+            DiscordEmbedConfigManager embedManager = new DiscordEmbedConfigManager(plugin, discordConfig);
+            this.discordLogger = new DiscordWebhookLogger(plugin, discordConfig, embedManager);
         }
     }
     
@@ -134,10 +135,6 @@ public class SpawnerActionLogger {
         }
     }
     
-    private void writeLogEntry(SpawnerLogEntry entry) {
-        writeLogEntries(Collections.singletonList(entry));
-    }
-    
     private void writeLogEntries(List<SpawnerLogEntry> entries) {
         if (currentLogFile == null || entries.isEmpty()) {
             return;
@@ -220,6 +217,23 @@ public class SpawnerActionLogger {
         rotateLogsIfNeeded();
     }
     
+    /**
+     * Reloads the Discord webhook logger from {@code discord_logging.yml}.
+     * The file-logging task is NOT interrupted; only the Discord side is restarted.
+     */
+    public void reloadDiscord() {
+        DiscordWebhookConfig newDiscordConfig = new DiscordWebhookConfig(plugin);
+        DiscordEmbedConfigManager newEmbedManager = new DiscordEmbedConfigManager(plugin, newDiscordConfig);
+
+        if (discordLogger != null) {
+            // Hot-reload: swap config and restart background task if needed
+            discordLogger.reload(newDiscordConfig, newEmbedManager);
+        } else if (newDiscordConfig.isEnabled()) {
+            // Discord was disabled before; create a fresh logger now
+            this.discordLogger = new DiscordWebhookLogger(plugin, newDiscordConfig, newEmbedManager);
+        }
+    }
+
     /**
      * Flushes remaining log entries and shuts down the logger.
      */

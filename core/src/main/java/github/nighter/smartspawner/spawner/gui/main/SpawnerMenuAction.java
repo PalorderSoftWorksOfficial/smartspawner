@@ -6,7 +6,7 @@ import github.nighter.smartspawner.hooks.rpg.AuraSkillsIntegration;
 import github.nighter.smartspawner.language.LanguageManager;
 import github.nighter.smartspawner.language.MessageService;
 import github.nighter.smartspawner.spawner.gui.stacker.SpawnerStackerUI;
-import github.nighter.smartspawner.spawner.gui.storage.ui.SpawnerStorageUI;
+import github.nighter.smartspawner.spawner.gui.storage.SpawnerStorageUI;
 import github.nighter.smartspawner.spawner.gui.synchronization.SpawnerGuiViewManager;
 import github.nighter.smartspawner.spawner.properties.SpawnerData;
 import github.nighter.smartspawner.spawner.sell.SpawnerSellManager;
@@ -127,10 +127,16 @@ public class SpawnerMenuAction implements Listener {
         }
 
         var button = buttonOpt.get();
-        String action = button.getAction(clickType);
-        
-        if (action == null) {
-            return false;
+        String action = button.getActionWithFallback(clickType);
+
+        if (action == null || action.isEmpty()) {
+            // Button exists but no action for this click type
+            // Consume the click to prevent legacy material-based fallback from firing
+            return true;
+        }
+
+        if (action.equals("none")) {
+            return true; // Explicitly disabled action — consume click, do nothing
         }
 
         switch (action) {
@@ -158,9 +164,16 @@ public class SpawnerMenuAction implements Listener {
                     messageService.sendMessage(player, "no_permission");
                     return true;
                 }
-                // Collect EXP and sell items in storage
-                handleExpBottleClick(player, spawner, true);
-                handleSellAllItems(player, spawner);
+                // If no items to sell, still allow exp collection
+                // Pass isSell=true to bypass the inner cooldown check (already checked above)
+                if (spawner.getVirtualInventory().getUsedSlots() == 0) {
+                    handleExpBottleClick(player, spawner, true);
+                    return true;
+                }
+                // Open confirmation GUI with exp collection enabled
+                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
+                plugin.getSpawnerSellConfirmUI().openSellConfirmGui(player, spawner,
+                    github.nighter.smartspawner.spawner.gui.sell.SpawnerSellConfirmUI.PreviousGui.MAIN_MENU, true);
                 return true;
             case "sell_all":
                 if (isClickTooFrequent(player)) {
@@ -193,13 +206,6 @@ public class SpawnerMenuAction implements Listener {
     }
 
     public void handleStorageClick(Player player, SpawnerData spawner) {
-        Inventory pageInventory = spawnerStorageUI.createStorageInventory(spawner, 1, -1);
-        player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1.0f, 1.0f);
-        player.closeInventory();
-        player.openInventory(pageInventory);
-    }
-
-    public void handleStorageClickBedrock(Player player, SpawnerData spawner) {
         Inventory pageInventory = spawnerStorageUI.createStorageInventory(spawner, 1, -1);
         player.playSound(player.getLocation(), Sound.BLOCK_CHEST_OPEN, 1.0f, 1.0f);
         player.openInventory(pageInventory);
@@ -264,8 +270,66 @@ public class SpawnerMenuAction implements Listener {
             messageService.sendMessage(player, "no_permission");
             return;
         }
+
+        // Check if there are items to sell
+        if (spawner.getVirtualInventory().getUsedSlots() == 0) {
+            messageService.sendMessage(player, "no_items");
+            return;
+        }
+
+        // Open confirmation GUI - from main menu, no exp collection
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
-        spawnerSellManager.sellAllItems(player, spawner);
+        plugin.getSpawnerSellConfirmUI().openSellConfirmGui(player, spawner,
+            github.nighter.smartspawner.spawner.gui.sell.SpawnerSellConfirmUI.PreviousGui.MAIN_MENU, false);
+    }
+
+    /**
+     * Collects XP from a spawner without navigating the player to any GUI.
+     * Used by the storage GUI so the player stays on the storage page after collecting.
+     * Returns {@code true} if XP was successfully collected.
+     */
+    public boolean collectExpForPlayer(Player player, SpawnerData spawner) {
+        int exp = spawner.getSpawnerExp();
+        if (exp <= 0) {
+            messageService.sendMessage(player, "no_exp");
+            return false;
+        }
+
+        int initialExp = exp;
+        int expUsedForMending = 0;
+
+        if (plugin.getConfig().getBoolean("spawner_properties.default.allow_exp_mending")) {
+            expUsedForMending = applyMendingFromExp(player, exp);
+            exp -= expUsedForMending;
+        }
+
+        if (auraSkills != null) {
+            giveAuraSkillsXp(player, spawner, initialExp);
+        }
+
+        if (exp > 0) {
+            if (SpawnerExpClaimEvent.getHandlerList().getRegisteredListeners().length != 0) {
+                SpawnerExpClaimEvent expClaimEvent = new SpawnerExpClaimEvent(player, spawner.getSpawnerLocation(), exp);
+                Bukkit.getPluginManager().callEvent(expClaimEvent);
+                if (expClaimEvent.isCancelled()) return false;
+                if (exp != expClaimEvent.getExpAmount()) exp = expClaimEvent.getExpAmount();
+            }
+            player.giveExp(exp);
+            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+        }
+
+        spawner.setSpawnerExp(0);
+        plugin.getSpawnerManager().markSpawnerModified(spawner.getSpawnerId());
+        spawnerGuiViewManager.updateSpawnerMenuViewers(spawner);
+
+        if (spawner.getSpawnerExp() < spawner.getMaxStoredExp()) {
+            if (spawner.getIsAtCapacity()) {
+                spawner.setIsAtCapacity(false);
+            }
+        }
+
+        sendExpCollectionMessage(player, initialExp, expUsedForMending);
+        return true;
     }
 
     public void handleExpBottleClick(Player player, SpawnerData spawner, boolean isSell) {

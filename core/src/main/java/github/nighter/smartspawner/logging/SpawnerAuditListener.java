@@ -1,8 +1,6 @@
 package github.nighter.smartspawner.logging;
 
-import github.nighter.smartspawner.SmartSpawner;
 import github.nighter.smartspawner.api.events.*;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -13,11 +11,9 @@ import org.bukkit.inventory.ItemStack;
  * Listens to all spawner events and delegates to the SpawnerActionLogger.
  */
 public class SpawnerAuditListener implements Listener {
-    private final SmartSpawner plugin;
     private final SpawnerActionLogger logger;
     
-    public SpawnerAuditListener(SmartSpawner plugin, SpawnerActionLogger logger) {
-        this.plugin = plugin;
+    public SpawnerAuditListener(SpawnerActionLogger logger) {
         this.logger = logger;
     }
     
